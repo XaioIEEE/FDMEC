@@ -1,0 +1,120 @@
+#import tool
+
+import pandas as pd
+import numpy as np
+from sklearn import metrics
+from matplotlib import pyplot as plt
+import seaborn as sns
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from torch.utils.data import DataLoader,TensorDataset
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision.models as models
+import time
+
+from torch.nn import init
+from thop import profile
+
+#Load dataset
+# Remember to install CUDA and cuDNN
+# Determine if your system supports CUDA.
+device = 'cuda' if torch.cuda.is_available() else 'cpu'  
+#%% Read FallAllD data
+data=pd.read_hdf("D:/conda/FallAllD.h5") #
+data = data.drop(columns = ['Gyr','Mag','Bar'])
+
+#%% Read SisFull
+data_Sis_pash="D:/conda/111_1117/SisFall_DL-master/SisFall_dataset/"
+df=pd.read_csv(data_Sis_pash+"SisFall_DataNameList.csv",header=0)
+df_r=df[1:]
+
+df_v=df['DataName'].values[:]
+
+#%% Label
+testmin=[]
+test_waist = []
+data_waist = []
+label_waist = []
+subject_waist = []
+# for i in range(len(data)):
+for i in range (len(df_r)):
+
+#     if(data['Device'][i] == 'Waist'):
+#         a = data['Acc'][i]*0.000244        
+        C_df = pd.read_csv(data_Sis_pash+df['DataName'][i])
+        testmin.append(len(C_df))
+        C_df = C_df[:].values[:2393].astype('float64')
+        a= C_df
+        # Normalize each data between 0 and 1
+        b = b = (a-np.amin(a))/(np.amax(a)-np.amin(a))
+        data_waist.append(b)        
+        subject_waist.append(df['Subject'][i])
+        # Class: fall = 0 ,ADL = 1 
+        if (df['FALL(1)_ADL(0)'][i]): 
+                label_waist.append(1)
+        else:
+                label_waist.append(0)
+
+#Preprocess Dataset
+#extend
+
+# Change list to array
+data_waist = np.array(data_waist, dtype=object)            
+label_waist = np.array(label_waist, dtype=object)
+subject_waist = np.array(subject_waist, dtype=object)
+print(data_waist.shape)
+# Downsampling 1/128
+down_data = []
+# (start:size:step)
+# def down_data_SisADD(data_waist):
+#down_data = data_waist[::1,::128,::1]
+# data_waist = data_waist.reshape((len(data_waist), 1, 1))
+down_data = data_waist[::1, ::62, ::1]
+down_data = np.array(down_data, dtype=object)
+print(down_data.shape)
+#%% Sliding_window
+sliding_waist_data =[]
+sliding_waist_label =[]
+sliding_waist_subject =[]  
+# The signal of each second 
+per_sec = 38/20
+sec = 7
+for num in range(len(down_data)):
+    if label_waist[num] ==1:
+        # Data[index][start:end,axis]
+        sliding_waist_data.append(down_data[num][int(np.uint(sec*per_sec*0.5)):int(np.uint(sec*per_sec*1.5)+1),:])
+        # Label each window with class and subject
+        sliding_waist_label.append(1)
+        sliding_waist_subject.append(subject_waist[num])
+        sliding_waist_data.append(down_data[num][int(np.uint(sec*per_sec*0.75)):int(np.uint(sec*per_sec*1.75-1))+1,:])
+        sliding_waist_label.append(1)
+        sliding_waist_subject.append(subject_waist[num])
+        sliding_waist_data.append(down_data[num][int(np.uint(sec*per_sec*1)):int(np.uint(sec*per_sec*2))+1,:])
+        sliding_waist_label.append(1)
+        sliding_waist_subject.append(subject_waist[num])
+        sliding_waist_data.append(down_data[num][int(np.uint(sec*per_sec*1.25)):int(np.uint(sec*per_sec*2.25))+1,:])
+        sliding_waist_label.append(1)
+        sliding_waist_subject.append(subject_waist[num])
+        
+    else:
+        sliding_waist_data.append(down_data[num][int(np.uint(sec*per_sec*0.5)):int(np.uint(sec*per_sec*1.5))+1,:])
+        sliding_waist_label.append(0)
+        sliding_waist_subject.append(subject_waist[num])
+        sliding_waist_data.append(down_data[num][int(np.uint(sec*per_sec*0.75)):int(np.uint(sec*per_sec*1.75-1))+1,:])
+        sliding_waist_label.append(0)
+        sliding_waist_subject.append(subject_waist[num])
+        sliding_waist_data.append(down_data[num][int(np.uint(sec*per_sec*1)):int(np.uint(sec*per_sec*2))+1,:])
+        sliding_waist_label.append(0)
+        sliding_waist_subject.append(subject_waist[num])
+        sliding_waist_data.append(down_data[num][int(np.uint(sec*per_sec*1.25)):int(np.uint(sec*per_sec*2.25))+1,:])
+        sliding_waist_label.append(0)
+        sliding_waist_subject.append(subject_waist[num])
+        
+sliding_waist_data = np.array(sliding_waist_data)
+sliding_waist_label = np.array(sliding_waist_label)
+sliding_waist_subject = np.array(sliding_waist_subject) 
+print(sliding_waist_data.shape)
+np.save('FallALLD_SW_data',sliding_waist_data)
+np.save('FallALLD_SW_label',sliding_waist_label)
+np.save('FallALLD_SW_subject',sliding_waist_subject)

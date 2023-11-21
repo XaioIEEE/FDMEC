@@ -14,6 +14,6 @@ Fall Detection KD Model
 
 
 #  Source code for FDMEC. The dataset can be found in IEEE Dataport portal：
-* "FallAllD", IEEE Dataport, doi:https://ieee-dataport.org/open-access/fallalld-comprehensive-dataset-human-falls-and-activities-daily-living
+  * "FallAllD", IEEE Dataport, doi:https://ieee-dataport.org/open-access/fallalld-comprehensive-dataset-human-falls-and-activities-daily-living
 
-* "Sisfall", sersors Dataport, doi:https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5298771/)https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5298771
+  * "Sisfall", sersors Dataport, doi:https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5298771/)https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5298771
